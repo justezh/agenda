@@ -29,11 +29,6 @@ class Tarefa:
             
         return cls(id_tarefa=id, titulo_tarefa=titulo, data_conclusao=data)
     
-    # Simulando o conceito de sobrecarga
-    # Tarefa('Título da Tarefa')
-    # Tarefa('Título da Tarefa', '2026-02-03')
-    # Tarefa.id(1)
-
     def salvar_tarefa(self: Self) -> None:
         with Database() as db:
             query: str = "INSERT INTO tarefas (titulo_tarefa, data_conclusao) VALUES (?, ?);"

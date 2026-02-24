@@ -1,50 +1,87 @@
 from flask import Flask, render_template, request, redirect, url_for
-from models.tarefa import Tarefa
-from models.database import init_db
+from models.Midia import Midia
+import os
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
-init_db()
+UPLOAD_FOLDER = "static/uploads"
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
-@app.route('/')
+
+@app.route("/")
 def home():
-    return redirect(url_for('agenda'))
+    midias = Midia.obter_midias()
+    return render_template("index.html", midias=midias)
 
-@app.route('/agenda', methods=['GET', 'POST'])
-def agenda():
-    tarefas = None
-    
-    if request.method == 'POST':
-        titulo_tarefa = request.form['titulo-tarefa']
-        data_conclusao = request.form['data-conclusao']
-        tarefa = Tarefa(titulo_tarefa, data_conclusao)
-        tarefa.salvar_tarefa()
 
-    tarefas = Tarefa.obter_tarefas()
-    return render_template('agenda.html', titulo='Nova tarefa', tarefas=tarefas)
+@app.route("/criar", methods=["GET", "POST"])
+def criar():
 
-@app.route('/delete/<int:idTarefa>')
-def delete(idTarefa):
-    tarefa = Tarefa.id(idTarefa)
-    tarefa.excluir_tarefa()
-    # return render_template('agenda.html', titulo="Agenda", tarefas=tarefas)
-    return redirect(url_for('agenda'))
+    if request.method == "POST":
 
-@app.route('/update/<int:idTarefa>', methods = ['GET', 'POST'])
-def update(idTarefa):
-    
-    if request.method == 'POST':
-        titulo = request.form['titulo-tarefa']
-        data = request.form['data-conclusao']
-        tarefa = Tarefa(titulo, data, idTarefa)
-        tarefa.atualizar_tarefa()
-        return redirect(url_for('agenda')) # early return
+        titulo = request.form["titulo"]
+        tipo = request.form["tipo"]
+        indicado_por = request.form.get("indicado_por")
 
-    tarefas = Tarefa.obter_tarefas()
-    tarefa_selecionada = Tarefa.id(idTarefa) # seleção da tarefa que será editada
+        imagem_nome = None
 
-    return render_template('agenda.html', titulo=f'Editando a tarefa ID: {idTarefa}', tarefas=tarefas, tarefa_selecionada=tarefa_selecionada)
+        file = request.files.get("imagem")
 
-@app.route('/ola')
-def ola_mundo():
-    return "Olá, Mundo!"
+        if file and file.filename:
+            filename = secure_filename(file.filename)
+            caminho = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+            file.save(caminho)
+            imagem_nome = filename
+
+        nova_midia = Midia(
+            titulo=titulo,
+            tipo=tipo,
+            indicado_por=indicado_por,
+            imagem=imagem_nome
+        )
+
+        nova_midia.salvar()
+
+        return redirect(url_for("home"))
+
+    return render_template("criar.html")
+
+
+@app.route("/editar/<int:id>", methods=["GET", "POST"])
+def editar(id):
+
+    midia = Midia.id(id)
+
+    if request.method == "POST":
+
+        midia.titulo = request.form["titulo"]
+        midia.tipo = request.form["tipo"]
+        midia.indicado_por = request.form.get("indicado_por")
+
+        file = request.files.get("imagem")
+
+        if file and file.filename:
+            filename = secure_filename(file.filename)
+            caminho = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+            file.save(caminho)
+            midia.imagem = filename
+
+        midia.atualizar()
+
+        return redirect(url_for("home"))
+
+    return render_template("editar.html", midia=midia)
+
+
+@app.route("/excluir/<int:id>")
+def excluir(id):
+
+    midia = Midia.id(id)
+    midia.excluir()
+
+    return redirect(url_for("home"))
+
+
+if __name__ == "__main__":
+    app.run(debug=True)

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Minha Lista Must Watch</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Minha Lista Must Watch</h1>
+    <a href="{{ url_for('criar') }}">Adicionar nova mídia</a>
+    <ul>
+        {% for m in midias %}
+        <li>
+            <strong>{{ m.titulo }}</strong> ({{ m.tipo }})
+            {% if m.indicado_por %}
+            - Indicado por: {{ m.indicado_por }}
+            {% endif %}
+            {% if m.imagem %}
+            <br><img src="{{ url_for('static', filename='uploads/' + m.imagem) }}" width="120">
+            {% endif %}
+            <br>
+            <a href="{{ url_for('editar', id=m.id_midia) }}">Editar</a> |
+            <a href="{{ url_for('excluir', id=m.id_midia) }}">Excluir</a>
+        </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
